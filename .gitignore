@@ -1,0 +1,12 @@
+
+# Created by https://www.gitignore.io/api/firebase
+
+### Firebase ###
+.idea
+**/node_modules/*
+**/.firebaserc
+
+# End of https://www.gitignore.io/api/firebase
+
+functions/lohs-supportseminar-firebase-adminsdk-5d5ti-24dd2b993e.json
+functions/lib

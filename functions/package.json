@@ -1,7 +1,7 @@
 {
   "name": "functions",
   "scripts": {
-    "lint": "./node_modules/.bin/tslint -p tslint.json",
+    "lint": "standard --parser typescript-eslint-parser --plugin typescript *.ts --verbose | snazzy",
     "build": "./node_modules/.bin/tsc",
     "serve": "npm run build && firebase serve --only functions",
     "shell": "npm run build && firebase experimental:functions:shell",
@@ -12,11 +12,15 @@
   "main": "lib/index.js",
   "dependencies": {
     "firebase-admin": "~5.8.1",
-    "firebase-functions": "^0.8.1"
+    "firebase-functions": "^0.8.1",
+    "moment": "^2.20.1",
+    "nodemailer": "^4.5.0"
   },
   "devDependencies": {
-    "tslint": "^5.8.0",
-    "typescript": "^2.5.3"
+    "eslint-plugin-typescript": "^0.8.1",
+    "standard": "^11.0.0",
+    "typescript": "^2.5.3",
+    "typescript-eslint-parser": "^14.0.0"
   },
   "private": true
 }
