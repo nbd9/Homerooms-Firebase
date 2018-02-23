@@ -24,13 +24,14 @@ interface student {
 }
 
 interface request {
-    user: string // We only really care about the UID
-    pushID?: string
-    teacher: string // First comes in as key
+    user: string // we only care about id
+    pushID: string
+    teacher: string // we only care about id
     accepted: boolean
     denied: boolean
     timestamp: string
     requestedTime: string
+    day: 'A' | 'B'
     reason: string
 }
 
@@ -89,7 +90,7 @@ const generateRequestEmail = (teacher: teacher, student: student, reason: string
                         text-align: left;
                         margin: 0;
                     }
-                    button {
+                    .button {
                         margin: 0 5px;
                         background: none;
                         border-radius: 10%;
@@ -97,10 +98,19 @@ const generateRequestEmail = (teacher: teacher, student: student, reason: string
                         height: 50px;
                         color: #1E88E5;
                         border: 5px solid #1E88E5;
+                        text-align: center;
                         transition: all 1s ease;
                         opacity: 0.7;
+                        text-decoration: none;
+                        background-color: #EEEEEE;
+                        color: #333333;
+                        padding: 2px 6px 2px 6px;
+                        border-top: 1px solid #CCCCCC;
+                        border-right: 1px solid #333333;
+                        border-bottom: 1px solid #333333;
+                        border-left: 1px solid #CCCCCC;
                     }
-                    button:hover {
+                    .button:hover {
                         transform: scale(1.1);
                         opacity: 1;
                     }
@@ -147,8 +157,8 @@ const generateRequestEmail = (teacher: teacher, student: student, reason: string
                     <p><span class="name">${student.name}</span> would like to attend your homeroom on <span class="date">${date}</span> because <span class="reason">"${reason}"</span>. </p>
                     <p class = "center"> Do you accept this request? </p>
                     <div class = "wrapper">
-                    <button id="accept-btn" onclick="location.href='${acceptLink}';"> Accept </button>
-                    <button id="reject-btn" onclick="location.href='${declineLink}';"> Reject </button>
+                        <a class="button" id="accept-btn" href="${acceptLink}">Accept</a>
+                        <a class="button" id="reject-btn" href="${declineLink}">Reject</a> 
                     </div>
                     <p> Sincerely, <br>
                     <br>
@@ -298,7 +308,7 @@ exports.sendRequest = functions.database.ref('/requests/{pushId}')
         let request: request = event.data.val()
 
         // Make sure there's a need to continue.
-        if (request.accepted === false) {
+        if (request.accepted === false && request.denied === false) {
             let teacherKey = request.teacher
             let studentKey = request.user
 
@@ -360,9 +370,13 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
 
     // Send e-mail to current homeroom teacher
     ref.once('value', function (requestSnapshot) {
-        db.ref('users/' + requestSnapshot.val().user).once('value', function (userSnapshot) {
+        let request: request = requestSnapshot.val()
+        db.ref('users/' + request.user).once('value', function (userSnapshot) {
             let student: student = userSnapshot.val()
-            db.ref('teachers/' + userSnapshot.val().defaultSeminar).once('value', function (teacherSnapshot) {
+
+            // Getting correct teacher ref
+            let teacherKey = (request.day === 'A') ? student.seminars.a : student.seminars.b
+            db.ref(`teachers/${teacherKey}`).once('value', function (teacherSnapshot) {
                 let teacher: teacher = teacherSnapshot.val()
                 let mailOptions = {
                     from: '"Homeroom" <' + functions.config().gmail.email + '>',
@@ -381,10 +395,10 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
     return ref.once('value', (requestSnapshot) => {
         let request: request = requestSnapshot.val()
 
-        db.ref('users/' + requestSnapshot.val().user).once('value', function (studentSnapshot) {
+        db.ref('users/' + request.user).once('value', function (studentSnapshot) {
             let student: student = studentSnapshot.val()
 
-            db.ref('teachers/' + requestSnapshot.val().teacher).once('value', function (teacherSnapshot) {
+            db.ref('teachers/' + request.teacher).once('value', function (teacherSnapshot) {
                 let teacher: teacher = teacherSnapshot.val()
 
                 if ('pushID' in request) {
