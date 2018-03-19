@@ -300,6 +300,92 @@ const generateDeniedScreen = (student: student) => {
     `)
 }
 
+const generateConfirmationScreen = (student: student) => {
+    let date = moment().format('dddd, MMMM Do')
+    return (
+        `
+        <!doctype html>
+        <html>
+        <head>
+        <style>
+        @import url('https://fonts.googleapis.com/css?family=Josefin+Slab|Nunito');
+        body {
+            background: #3b5998;
+            font-family: 'Nunito', sans-serif;
+            color: #000;
+        }
+        #content-wrap {
+            background: #f7f7f7;
+            width: 80%;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        span {
+            color: #1E88E5;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .center {
+            text-align: center;
+        }
+        footer {
+            margin-top: 50px;
+            font-size: 0.8em;
+            text-align: center;
+            color: #888;
+        }
+        .symbol {
+            font-size: 5em;
+            color: #cc4656;
+            display: block;
+            text-align: center;
+            line-height: 1em;
+        }
+        </style>
+        </head>
+        <body>
+        <div id="content-wrap"> <span class="symbol">!</span>
+        <p class="center"><span class="name">${student}</span> has been accepted into a different homeroom for <span class="date">${date}</span>, and as such will be going straight there and should not be marked absent. <br>
+            Happy teaching!</p>
+        <p>This message is from Homeroom, an app to connect teachers and learners. <br>
+            Contact us at <a href='mailto:contact@homeroom-app.com'>contact@homeroom-app.com <br>
+        </p>
+        </div>
+        </body>
+        </html>
+    `
+    )
+}
+
+const generateErrorScreen = (error) => {
+    console.error(error)
+    return (
+        `
+        <!doctype html>
+        <html>
+        <head>
+        <meta charset="utf-8">
+        <title>Error</title>
+            <link rel="stylesheet" href="style.css">
+        </head>
+
+        <body>
+        <div id="content-wrap"> <span class="symbol">Error</span>
+        <h3 class="center">An error occured while trying to process a student. Please try again and ensure all infornation in the request is correct. If the eror persists, please let us know</h3>
+        <p class="center">Error information: <span class="error">${error}</span></p>
+        <footer>
+            <p>This message is from Homeroom, an app to connect teachers and learners. <br>
+            Contact us at <a href='mailto:contact@homeroom-app.com'>contact@homeroom-app.com <br>
+            </p>
+        </footer>
+        </div>
+        </body>
+        </html>
+        `
+    )
+}
+
 /**
  * Sends an email to the requested teacher, asking to accept the student into Support Seminar
  */
@@ -350,18 +436,7 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
         accepted: true
     }, function (error) {
         if (error) {
-            console.log('Error setting accepted value.' + error)
-            return res.send(`
-            <!doctype html>
-            <html>
-                <head>
-                    <title>Homeroom Request</title>
-                </head>
-                <body>
-                    <h1>There was an error accepting the user. Please try again later.\n${error}</h1>
-                </body>
-            </html>`
-            )
+            return res.send(generateErrorScreen(error))
         } else {
             console.log('User accepted.')
             return null
@@ -383,7 +458,7 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
                     to: teacher.email,
                     subject: 'Homeroom Student Transfer',
                     text: 'Hello ' + teacher.firstName + ' ' + teacher.lastName + ',\n' + student.name + ' has been accepted into a different Homeroom, and as such will be going straight there. Please do not mark them absent.',
-                    html: '<h1>Hello ' + teacher.firstName + ' ' + teacher.lastName + ',</h1>\n<p>' + student.name + ' has been accepted into a different Homeroom, and as such will be going straight there. Please do not mark them absent.</p>'
+                    html: generateConfirmationScreen(student)
                 }
 
                 mailTransport.sendMail(mailOptions)
@@ -431,17 +506,7 @@ exports.denyRequest = functions.https.onRequest((req, res) => {
     }, function (error) {
         if (error) {
             console.log('Error setting accepted value.' + error)
-            return res.send(`
-            <!doctype html>
-            <html>
-                <head>
-                    <title>Homeroom Request</title>
-                </head>
-                <body>
-                    <h1>There was an error denying the user. Please try again later.\n${error}</h1>
-                </body>
-            </html>`
-            )
+            return res.send(generateErrorScreen(error))
         } else {
             console.log('User denied.')
             return null
