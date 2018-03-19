@@ -367,7 +367,41 @@ const generateErrorScreen = (error) => {
         <head>
         <meta charset="utf-8">
         <title>Error</title>
-            <link rel="stylesheet" href="style.css">
+            <style>
+            @import url('https://fonts.googleapis.com/css?family=Josefin+Slab|Nunito');
+            body {
+                background: #3b5998;
+                font-family: 'Nunito', sans-serif;
+                color: #000;
+            }
+            #content-wrap {
+                background: #f7f7f7;
+                width: 80%;
+                max-width: 1000px;
+                margin: 20px auto;
+                padding: 20px;
+            }
+            h3 {
+                font-size: 2em;
+                font-weight: bold;
+            }
+            .center {
+                text-align: center;
+            }
+            footer {
+                margin-top: 50px;
+                font-size: 0.8em;
+                text-align: center;
+                color: #888;
+            }
+            .symbol {
+                font-size: 5em;
+                color: #cc4656;
+                display: block;
+                text-align: center;
+                line-height: 1em;
+            }
+            </style>
         </head>
 
         <body>
