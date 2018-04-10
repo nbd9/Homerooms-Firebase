@@ -43,7 +43,7 @@ firebase.database().ref('/teachers/').orderByChild('lastName').once('value').the
     for (var key in teachers) {
         if (teachers.hasOwnProperty(key)) {
             var teacher = teachers[key]
-            var value = teacher.lastName + ', ' teacher.firstName
+            var value = teacher.lastName + ', ' + teacher.firstName
             $('select').append($("<option></option>").attr("value", teacher.id).text(value))
         }
     }
