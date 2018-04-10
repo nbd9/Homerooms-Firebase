@@ -35,12 +35,15 @@ $(document).ready(function () {
 });
 
 firebase.database().ref('/teachers/').orderByChild('lastName').once('value').then(function (snapshot) {
+    // Add option for early release
+    $('select').append($("<option></option>").attr("value", 0).text("None / Early Release"))
+    
     var teachers = snapshot.val()
 
     for (var key in teachers) {
         if (teachers.hasOwnProperty(key)) {
             var teacher = teachers[key]
-            var value = teacher.firstName + ' ' + teacher.lastName
+            var value = teacher.lastName + ', ' teacher.firstName
             $('select').append($("<option></option>").attr("value", teacher.id).text(value))
         }
     }
