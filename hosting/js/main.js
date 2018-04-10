@@ -12,9 +12,13 @@ function signUp() {
                 }
             })
 
-            // firebase.auth().signOut().then(function () {
-            //     M.toast({ html: `Thank you! ${name} has been successfully registered for Homeroom.` })
-            // })
+            firebase.auth().signOut().then(function () {
+                M.toast({ html: `Thank you! ${name} has been successfully registered for Homeroom.` })
+            })
+
+            setInterval(function () {
+                location.reload()
+            }, 3000)
         })
         .catch(function (error) {
             console.error(error)
@@ -23,7 +27,7 @@ function signUp() {
 }
 
 function checkForm() {
-    return $('#email').val().split('@').slice(1) === 'loswego.k12.or.us' && $('#password').val() && $('#first_name').val() && $('#last_name').val() && $("#teacher-a").val() && $("#teacher-b").val()
+    return $('#email').val().split('@').slice(1) == 'loswego.k12.or.us' && $('#password').val() && $('#first_name').val() && $('#last_name').val() && $("#teacher-a").val() && $("#teacher-b").val()
 }
 
 $(document).ready(function () {
