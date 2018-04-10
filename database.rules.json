@@ -7,7 +7,7 @@
       }
     },
     "teachers": {
-      ".read": "auth != null",
+      ".read": true,
       ".write": false
     },
     "requests": {

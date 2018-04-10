@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Homeroom Beta Sign-Up</title>
+    <link rel="icon" href="../assets/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/css/materialize.min.css'>
+    <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/icon?family=Material+Icons'>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="row">
+        <h4>Homeroom Beta Sign-Up</h4>
+            <div class="row">
+                <div class="input-field col s6">
+                    <input id="first_name" type="text" class="validate" autocomplete='given-name' required>
+                    <label for="first_name">First Name</label>
+                </div>
+                <div class="input-field col s6">
+                    <input id="last_name" type="text" class="validate" autocomplete='family-name' required>
+                    <label for="last_name">Last Name</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input id="email" type="email" class="validate" autocomplete='email' pattern="[a-z0-9._%+-]+@loswego.k12.or.us" required>
+                    <label for="email">Email</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input id="password" type="password" class="validate" minlength="6" required>
+                    <label for="password">Password</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s6" >
+                    <select id="teacher-a" required>
+                        <option value="NONE" disabled selected>Choose your teacher</option>
+                    </select>
+                    <label>Seminar Teacher (A Day)</label>
+                </div>
+                <div class="input-field col s6">
+                    <select id="teacher-b" required>
+                        <option value="NONE" disabled selected>Choose your teacher</option>
+                    </select>
+                    <label>Seminar Teacher (B Day)</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s6">
+                    <button class="btn btn-large btn-register waves-effect waves-light blue" id="submit" onclick="(checkForm()) ? signUp() : M.toast({ html: 'Please fill out all parts.' })">Register
+                        <i class="material-icons right">done</i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src='https://code.jquery.com/jquery-2.1.1.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/js/materialize.min.js'></script>
+    <script src="https://www.gstatic.com/firebasejs/4.0.0/firebase.js"></script>
+    <script>
+        // Initialize Firebase
+        var config = {
+            apiKey: "AIzaSyDfnQkzyWbwYjFClFuUXljGuJptsZA2hSQ",
+            authDomain: "lohs-supportseminar.firebaseapp.com",
+            databaseURL: "https://lohs-supportseminar.firebaseio.com",
+            projectId: "lohs-supportseminar",
+            storageBucket: "lohs-supportseminar.appspot.com",
+            messagingSenderId: "781236960586"
+        };
+        firebase.initializeApp(config);
+    </script>
+
+    <script src="../js/main.js">
+    </script>
+
+</body>
+
+</html>
