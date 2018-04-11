@@ -13,12 +13,8 @@ function signUp() {
             })
 
             firebase.auth().signOut().then(function () {
-                M.toast({ html: `Thank you! ${name} has been successfully registered for Homeroom.` })
+                $('.modal').modal('open')
             })
-
-            setInterval(function () {
-                location.reload()
-            }, 3000)
         })
         .catch(function (error) {
             console.error(error)
@@ -27,11 +23,20 @@ function signUp() {
 }
 
 function checkForm() {
-    return $('#email').val().split('@').slice(1) == 'loswego.k12.or.us' && $('#password').val() && $('#first_name').val() && $('#last_name').val() && $("#teacher-a").val() && $("#teacher-b").val()
+    if ($('#email').val().split('@').slice(1) == 'loswego.k12.or.us' && $('#password').val() && $('#first_name').val() && $('#last_name').val() && $("#teacher-a").val() && $("#teacher-b").val()) {
+        if ($('#access_key').val() == 'insertcoin') {
+            signUp()
+        } else {
+            M.toast({ html: `Incorrect access key.` })
+        }
+    } else {
+        M.toast({ html: 'Please fill out all parts.' })
+    }
 }
 
 $(document).ready(function () {
-    $('select').formSelect();
+    $('select').formSelect()
+    $('.modal').modal()
 });
 
 firebase.database().ref('/teachers/').orderByChild('lastName').once('value').then(function (snapshot) {

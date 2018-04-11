@@ -15,8 +15,17 @@
 <body>
 
     <div class="container">
+        <div id="modalComplete" class="modal">
+            <div class="modal-content">
+                <h4>Registration Complete</h4>
+                <p>You're all ready to go! To continue, download the app for either Android or iOS and log in.</p>
+            </div>
+            <div class="modal-footer">
+                <a href="https://play.google.com/store/apps/details?id=com.nbdeg.homeroom" class="modal-action modal-close waves-effect waves-green btn-flat">Android</a>
+            </div>
+        </div>
         <div class="row">
-        <h4>Homeroom Beta Sign-Up</h4>
+            <h4>Homeroom Beta Sign-Up</h4>
             <div class="row">
                 <div class="input-field col s6">
                     <input id="first_name" type="text" class="validate" autocomplete='given-name' required>
@@ -55,9 +64,15 @@
             </div>
             <div class="row">
                 <div class="input-field col s6">
-                    <button class="btn btn-large btn-register waves-effect waves-light blue" id="submit" onclick="(checkForm()) ? signUp() : M.toast({ html: 'Please fill out all parts.' })">Register
+                    <button class="btn btn-large btn-register waves-effect waves-light blue" id="submit" onclick="checkForm()">Register
                         <i class="material-icons right">done</i>
                     </button>
+                </div>
+                <div class="row">
+                    <div class="input-field col s6">
+                        <input id="access_key" type="text" required>
+                        <label for="access_key">Access Key</label>
+                    </div>
                 </div>
             </div>
         </div>
