@@ -20,7 +20,8 @@ interface student {
     seminars: {
         a: string // corresponds to id
         b: string // corresponds to id
-    }
+    },
+    testing: boolean
 }
 
 interface request {
@@ -443,15 +444,16 @@ exports.sendRequest = functions.database.ref('/requests/{pushId}')
                 let teacher: teacher = teacherSnapshot.val()
                 studentRef.once('value', function (studentSnapshot) {
                     let student: student = studentSnapshot.val()
-                    let mailOptions = {
-                        from: '"Homeroom" <' + functions.config().gmail.email + '>',
-                        to: teacher.email,
-                        subject: 'Homeroom Student Request',
-                        text: `${student.name} has requested to come to your homeroom. To accept, please click this link: ${acceptLink}. To decline, please click this link: ${declineLink}`,
-                        html: generateRequestEmail(teacher, student, request.reason, acceptLink, declineLink)
+                    if (!student.testing) {
+                        let mailOptions = {
+                            from: '"Homeroom" <' + functions.config().gmail.email + '>',
+                            to: teacher.email,
+                            subject: 'Homeroom Student Request',
+                            text: `${student.name} has requested to come to your homeroom. To accept, please click this link: ${acceptLink}. To decline, please click this link: ${declineLink}`,
+                            html: generateRequestEmail(teacher, student, request.reason, acceptLink, declineLink)
+                        }
+                        return mailTransport.sendMail(mailOptions)
                     }
-
-                    return mailTransport.sendMail(mailOptions)
                 })
             })
         }

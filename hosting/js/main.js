@@ -9,7 +9,8 @@ function signUp() {
                 seminars: {
                     a: $("#teacher-a").val(),
                     b: $("#teacher-b").val()
-                }
+                },
+                testing: false
             })
 
             firebase.auth().signOut().then(function () {
