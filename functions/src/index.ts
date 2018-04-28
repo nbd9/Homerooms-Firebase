@@ -36,11 +36,7 @@ interface request {
     reason: string
 }
 
-const serviceAccount = require('../homeroom-firebase-adminsdk-key.json')
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: 'https://lohs-supportseminar.firebaseio.com'
-})
+admin.initializeApp()
 
 const db = admin.database()
 
@@ -425,39 +421,39 @@ const generateErrorScreen = (error) => {
  * Sends an email to the requested teacher, asking to accept the student into Support Seminar
  */
 exports.sendRequest = functions.database.ref('/requests/{pushId}')
-    .onWrite(event => {
-        let request: request = event.data.val()
+    .onCreate((snapshot, context) => {
+        let request: request = snapshot.val()
+        let teacherKey = request.teacher
+        let studentKey = request.user
 
-        // Make sure there's a need to continue.
-        if (request.accepted === false && request.denied === false) {
-            let teacherKey = request.teacher
-            let studentKey = request.user
+        let acceptLink = 'https://lohs-supportseminar.firebaseapp.com/acceptRequest/' + context.params.pushId
+        let declineLink = 'https://lohs-supportseminar.firebaseapp.com/declineRequest/' + context.params.pushId
 
-            console.log('Sending request email', event.params.pushId, teacherKey)
-            let acceptLink = 'https://lohs-supportseminar.firebaseapp.com/acceptRequest/' + event.params.pushId
-            let declineLink = 'https://lohs-supportseminar.firebaseapp.com/declineRequest/' + event.params.pushId
+        let teacherRef = db.ref('teachers/' + teacherKey)
+        let studentRef = db.ref('users/' + studentKey)
 
-            let teacherRef = db.ref('teachers/' + teacherKey)
-            let studentRef = db.ref('users/' + studentKey)
-
-            teacherRef.once('value', function (teacherSnapshot) {
-                let teacher: teacher = teacherSnapshot.val()
-                studentRef.once('value', function (studentSnapshot) {
-                    let student: student = studentSnapshot.val()
-                    if (!student.testing) {
-                        let mailOptions = {
-                            from: '"Homeroom" <' + functions.config().gmail.email + '>',
-                            to: teacher.email,
-                            subject: 'Homeroom Student Request',
-                            text: `${student.name} has requested to come to your homeroom. To accept, please click this link: ${acceptLink}. To decline, please click this link: ${declineLink}`,
-                            html: generateRequestEmail(teacher, student, request.reason, acceptLink, declineLink)
-                        }
-                        return mailTransport.sendMail(mailOptions)
+        teacherRef.once('value', function (teacherSnapshot) {
+            let teacher: teacher = teacherSnapshot.val()
+            studentRef.once('value', function (studentSnapshot) {
+                let student: student = studentSnapshot.val()
+                if (!student.testing) {
+                    console.log('Sending request email', context.params.pushId, teacherKey)
+                    let mailOptions = {
+                        from: '"Homeroom" <' + functions.config().gmail.email + '>',
+                        to: teacher.email,
+                        subject: 'Homeroom Student Request',
+                        text: `${student.name} has requested to come to your homeroom. To accept, please click this link: ${acceptLink}. To decline, please click this link: ${declineLink}`,
+                        html: generateRequestEmail(teacher, student, request.reason, acceptLink, declineLink)
                     }
-                })
+                    return mailTransport.sendMail(mailOptions)
+                } else {
+                    console.log('Test Account - no need to send an email.')
+                    return true // Suppressing errors.
+                }
             })
-        }
-    })
+        })
+    }
+)
 
 /**
  * Accepts the student request and sends them a push notifcation
