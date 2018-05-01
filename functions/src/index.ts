@@ -53,9 +53,9 @@ const mailTransport = nodemailer.createTransport({
 })
 
 
-const generateRequestEmail = (teacher: teacher, student: student, reason: string, acceptLink: string, declineLink: string) => {
+const generateRequestEmail = (teacher: teacher, student: student, requestedDate: string, reason: string, acceptLink: string, declineLink: string) => {
     // let date = DateTime.local().toLocaleString(DateTime.DATE_HUGE)
-    let date = moment().format('dddd, MMMM Do')
+    let date = moment(requestedDate).format('dddd, MMMM Do')
     return (`
         <!doctype html>
         <html>
@@ -171,8 +171,8 @@ const generateRequestEmail = (teacher: teacher, student: student, reason: string
     `)
 }
 
-const generateAcceptedScreen = (student: student) => {
-    let date = moment().format('dddd, MMMM Do')
+const generateAcceptedScreen = (student: student, requestedDate: string) => {
+    let date = moment(requestedDate).format('dddd, MMMM Do')
     return (`
         <!doctype html>
         <html>
@@ -234,8 +234,8 @@ const generateAcceptedScreen = (student: student) => {
     `)
 }
 
-const generateDeniedScreen = (student: student) => {
-    let date = moment().format('dddd, MMMM Do')
+const generateDeniedScreen = (student: student, requestedDate: string) => {
+    let date = moment(requestedDate).format('dddd, MMMM Do')
     return (`
         <!doctype html>
         <html>
@@ -297,8 +297,8 @@ const generateDeniedScreen = (student: student) => {
     `)
 }
 
-const generateConfirmationScreen = (student: student) => {
-    let date = moment().format('dddd, MMMM Do')
+const generateConfirmationScreen = (student: student, requestedDate: string) => {
+    let date = moment(requestedDate).format('dddd, MMMM Do')
     return (
         `
         <!doctype html>
@@ -443,7 +443,7 @@ exports.sendRequest = functions.database.ref('/requests/{pushId}')
                         to: teacher.email,
                         subject: 'Homeroom Student Request',
                         text: `${student.name} has requested to come to your homeroom. To accept, please click this link: ${acceptLink}. To decline, please click this link: ${declineLink}`,
-                        html: generateRequestEmail(teacher, student, request.reason, acceptLink, declineLink)
+                        html: generateRequestEmail(teacher, student, request.requestedTime, request.reason, acceptLink, declineLink)
                     }
                     return mailTransport.sendMail(mailOptions)
                 } else {
@@ -490,7 +490,7 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
                     to: teacher.email,
                     subject: 'Homeroom Student Transfer',
                     text: 'Hello ' + teacher.firstName + ' ' + teacher.lastName + ',\n' + student.name + ' has been accepted into a different Homeroom, and as such will be going straight there. Please do not mark them absent.',
-                    html: generateConfirmationScreen(student)
+                    html: generateConfirmationScreen(student, request.requestedTime)
                 }
 
                 mailTransport.sendMail(mailOptions)
@@ -518,7 +518,7 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
                     admin.messaging().sendToDevice(request.pushID, payload)
                 }
 
-                return res.send(generateAcceptedScreen(student))
+                return res.send(generateAcceptedScreen(student, request.requestedTime))
             })
         })
     })
@@ -565,7 +565,7 @@ exports.denyRequest = functions.https.onRequest((req, res) => {
                     admin.messaging().sendToDevice(request.pushID, payload)
                 }
 
-                return res.send(generateDeniedScreen(student))
+                return res.send(generateDeniedScreen(student, request.requestedTime))
             })
         })
     })
