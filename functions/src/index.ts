@@ -343,10 +343,9 @@ const generateConfirmationScreen = (student: student, requestedDate: string) => 
         </head>
         <body>
         <div id="content-wrap"> <span class="symbol">!</span>
-        <p class="center"><span class="name">${student}</span> has been accepted into a different homeroom for <span class="date">${date}</span>, and as such will be going straight there and should not be marked absent. <br>
+        <p class="center"><span class="name">${student.name}</span> has been accepted into a different homeroom for <span class="date">${date}</span>, and as such will be going straight there and should not be marked absent. <br>
             Happy teaching!</p>
         <p>This message is from Homeroom, an app to connect teachers and learners. <br>
-            Contact us at <a href='mailto:contact@homeroom-app.com'>contact@homeroom-app.com <br>
         </p>
         </div>
         </body>
