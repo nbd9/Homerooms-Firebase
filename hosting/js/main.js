@@ -3,12 +3,14 @@ function signUp() {
         .then(function (user) {
             var uid = user.uid
             var name = $('#first_name').val() + ' ' + $('#last_name').val()
+            var teacherA = (/^\d+$/.test($("#teacher-a").val())) ? 0 : $("#teacher-a").val()
+            var teacherB = (/^\d+$/.test($("#teacher-b").val())) ? 0 : $("#teacher-b").val()
             firebase.database().ref('/users/' + uid).set({
                 lastRequest: 0,
                 name: name,
                 seminars: {
-                    a: $("#teacher-a").val(),
-                    b: $("#teacher-b").val()
+                    a: teacherA,
+                    b: teacherB
                 },
                 testing: false
             })
