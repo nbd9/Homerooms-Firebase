@@ -2,38 +2,38 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as nodemailer from 'nodemailer'
 import * as moment from 'moment'
+import * as Expo from 'expo-server-sdk'
 
 interface teacher {
     email: string
-    firstName: string
+    name: string
     id: string
-    lastName: string
     room: string | number
-    taughtCourses: string
-    picture ?: string
+    specialty: string
+    picture?: string
 }
 
-interface student {
+interface user {
     id: number
     name: string
-    lastRequest: string
-    seminars: {
-        a: string // corresponds to id
-        b: string // corresponds to id
-    },
-    testing: boolean
+    lastRequest?: string
+    defaultTeachers?: { string } | [ string ],
+    role: 'student' | 'qa' | 'teacher',
+    room?: string | number
+    specialty?: string
+    token?: string
 }
 
 interface request {
     user: string // we only care about id
-    pushID: string
-    teacher: string // we only care about id
+    newteacher: string // we only care about id
+    oldTeacher: string // we only care about id
     accepted: boolean
-    denied: boolean
+    viewed: boolean
     timestamp: string
     requestedTime: string
-    day: 'A' | 'B'
-    reason: string
+    day?: string 
+    reason?: string
 }
 
 admin.initializeApp()
@@ -53,7 +53,7 @@ const mailTransport = nodemailer.createTransport({
 })
 
 
-const generateRequestEmail = (teacher: teacher, student: student, requestedDate: string, reason: string, acceptLink: string, declineLink: string) => {
+const generateRequestEmail = (teacher: teacher, student: user, requestedDate: string, reason: string, acceptLink: string, declineLink: string) => {
     // let date = DateTime.local().toLocaleString(DateTime.DATE_HUGE)
     let date = moment(requestedDate).format('dddd, MMMM Do')
     return (`
@@ -150,7 +150,7 @@ const generateRequestEmail = (teacher: teacher, student: student, requestedDate:
             <body>
                 <p class="preheader">${student.name} wants to attend your homeroom.</p>
                 <div id="content-wrap">
-                    <h5>Dear ${teacher.firstName} ${teacher.lastName}, </h5>
+                    <h5>Dear ${teacher.name}, </h5>
                     <p><span class="name">${student.name}</span> would like to attend your homeroom on <span class="date">${date}</span> because <span class="reason">"${reason}"</span>. </p>
                     <p class = "center"> Do you accept this request? </p>
                     <div class = "wrapper">
@@ -159,10 +159,9 @@ const generateRequestEmail = (teacher: teacher, student: student, requestedDate:
                     </div>
                     <p> Sincerely, <br>
                     <br>
-                    The Homeroom Team </p>
+                    The Homerooms Team </p>
                     <footer>
-                        <p>This message is from Homeroom, an app to connect teachers and learners. <br>
-                            Contact us at <a href='mailto:contact@homeroom-app.com'>contact@homeroom-app.com <br>
+                        <p>This message is from Homerooms, an app to connect teachers and learners.
                         </p>
                     </footer>
                 </div>
@@ -171,7 +170,7 @@ const generateRequestEmail = (teacher: teacher, student: student, requestedDate:
     `)
 }
 
-const generateAcceptedScreen = (student: student, requestedDate: string) => {
+const generateAcceptedScreen = (student: user, requestedDate: string) => {
     let date = moment(requestedDate).format('dddd, MMMM Do')
     return (`
         <!doctype html>
@@ -224,8 +223,7 @@ const generateAcceptedScreen = (student: student, requestedDate: string) => {
                     <p class="center"><span class="name">${student.name}</span> has been accepted into your Homeroom on <span class="date">${date}</span>. <br>
                     Happy teaching!</p>
                     <footer>
-                        <p>This message is from Homeroom, an app to connect teachers and learners. <br>
-                            Contact us at <a href='mailto:contact@homeroom-app.com'>contact@homeroom-app.com <br>
+                        <p>This message is from Homerooms, an app to connect teachers and learners. <br>
                         </p>
                     </footer>
                 </div>
@@ -234,7 +232,7 @@ const generateAcceptedScreen = (student: student, requestedDate: string) => {
     `)
 }
 
-const generateDeniedScreen = (student: student, requestedDate: string) => {
+const generateDeniedScreen = (student: user, requestedDate: string) => {
     let date = moment(requestedDate).format('dddd, MMMM Do')
     return (`
         <!doctype html>
@@ -287,8 +285,7 @@ const generateDeniedScreen = (student: student, requestedDate: string) => {
                     <p class="center"><span class="name">${student.name}'s</span> request for your Homeroom on <span class="date">${date}</span> has been denied. <br>
                     Happy teaching!</p>
                     <footer>
-                        <p>This message is from Homeroom, an app to connect teachers and learners. <br>
-                            Contact us at <a href='mailto:contact@homeroom-app.com'>contact@homeroom-app.com <br>
+                        <p>This message is from Homerooms, an app to connect teachers and learners.
                         </p>
                     </footer>
                 </div>
@@ -297,7 +294,7 @@ const generateDeniedScreen = (student: student, requestedDate: string) => {
     `)
 }
 
-const generateConfirmationScreen = (student: student, requestedDate: string) => {
+const generateConfirmationScreen = (student: user, requestedDate: string) => {
     let date = moment(requestedDate).format('dddd, MMMM Do')
     return (
         `
@@ -345,7 +342,7 @@ const generateConfirmationScreen = (student: student, requestedDate: string) => 
         <div id="content-wrap"> <span class="symbol">!</span>
         <p class="center"><span class="name">${student.name}</span> has been accepted into a different homeroom for <span class="date">${date}</span>, and as such will be going straight there and should not be marked absent. <br>
             Happy teaching!</p>
-        <p>This message is from Homeroom, an app to connect teachers and learners. <br>
+        <p>This message is from Homerooms, an app to connect teachers and learners. <br>
         </p>
         </div>
         </body>
@@ -405,8 +402,7 @@ const generateErrorScreen = (error) => {
         <h3 class="center">An error occured while trying to process a student. Please try again and ensure all infornation in the request is correct. If the eror persists, please let us know</h3>
         <p class="center">Error information: <span class="error">${error}</span></p>
         <footer>
-            <p>This message is from Homeroom, an app to connect teachers and learners. <br>
-            Contact us at <a href='mailto:contact@homeroom-app.com'>contact@homeroom-app.com <br>
+            <p>This message is from Homerooms, an app to connect teachers and learners.
             </p>
         </footer>
         </div>
@@ -419,35 +415,30 @@ const generateErrorScreen = (error) => {
 /**
  * Sends an email to the requested teacher, asking to accept the student into Support Seminar
  */
-exports.sendRequest = functions.database.ref('/requests/{pushId}')
+exports.sendRequest = functions.database.ref('/schools/{school}/requests/{requestID}')
     .onCreate((snapshot, context) => {
         let request: request = snapshot.val()
-        let teacherKey = request.teacher
-        let studentKey = request.user
+        let teacherRef = db.ref(`schools/${context.params.school}/teachers/${request.teacher}`)
+        let studentRef = db.ref(`users/${request.user}`)
 
-        let acceptLink = 'https://lohs-supportseminar.firebaseapp.com/acceptRequest/' + context.params.pushId
-        let declineLink = 'https://lohs-supportseminar.firebaseapp.com/declineRequest/' + context.params.pushId
-
-        let teacherRef = db.ref('teachers/' + teacherKey)
-        let studentRef = db.ref('users/' + studentKey)
+        let acceptLink = `https://homerooms-nbdeg.firebaseapp.com/acceptRequest/${context.params.school}/${context.params.requestID}`
+        let declineLink = `https://homerooms-nbdeg.firebaseapp.com/declineRequest/${context.params.school}/${context.params.requestID}` 
 
         teacherRef.once('value', function (teacherSnapshot) {
             let teacher: teacher = teacherSnapshot.val()
             studentRef.once('value', function (studentSnapshot) {
-                let student: student = studentSnapshot.val()
-                if (!student.testing) {
-                    console.log('Sending request email', context.params.pushId, teacherKey)
+                let student: user = studentSnapshot.val()
+                if (student.role == 'student') {
                     let mailOptions = {
-                        from: '"Homeroom" <' + functions.config().gmail.email + '>',
+                        from: '"Homerooms" <' + functions.config().gmail.email + '>',
                         to: teacher.email,
                         subject: 'Homeroom Student Request',
                         text: `${student.name} has requested to come to your homeroom. To accept, please click this link: ${acceptLink}. To decline, please click this link: ${declineLink}`,
                         html: generateRequestEmail(teacher, student, request.requestedTime, request.reason, acceptLink, declineLink)
                     }
-                    return mailTransport.sendMail(mailOptions)
+                    mailTransport.sendMail(mailOptions)
                 } else {
                     console.log('Test Account - no need to send an email.')
-                    return true // Suppressing errors.
                 }
             })
         })
@@ -459,8 +450,9 @@ exports.sendRequest = functions.database.ref('/requests/{pushId}')
  */
 exports.acceptRequest = functions.https.onRequest((req, res) => {
     const params = req.url.split('/')
-    const requestID = params[2]
-    const ref = db.ref('requests/' + requestID)
+    const schoolID = params[2]
+    const requestID = params[3]
+    const ref = db.ref(`schools/${schoolID}/requests/${requestID}`)
 
     // Set accepted value
     ref.update({
@@ -478,17 +470,17 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
     ref.once('value', function (requestSnapshot) {
         let request: request = requestSnapshot.val()
         db.ref('users/' + request.user).once('value', function (userSnapshot) {
-            let student: student = userSnapshot.val()
+            let student: user = userSnapshot.val()
 
             // Getting correct teacher ref
             let teacherKey = (request.day === 'A') ? student.seminars.a : student.seminars.b
             db.ref(`teachers/${teacherKey}`).once('value', function (teacherSnapshot) {
                 let teacher: teacher = teacherSnapshot.val()
                 let mailOptions = {
-                    from: '"Homeroom" <' + functions.config().gmail.email + '>',
+                    from: '"Homerooms" <' + functions.config().gmail.email + '>',
                     to: teacher.email,
                     subject: 'Homeroom Student Transfer',
-                    text: 'Hello ' + teacher.firstName + ' ' + teacher.lastName + ',\n' + student.name + ' has been accepted into a different Homeroom, and as such will be going straight there. Please do not mark them absent.',
+                    text: 'Hello ' + teacher.name + ',\n' + student.name + ' has been accepted into a different Homeroom, and as such will be going straight there. Please do not mark them absent.',
                     html: generateConfirmationScreen(student, request.requestedTime)
                 }
 
@@ -511,7 +503,7 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
                     let payload = {
                         notification: {
                             title: 'Homeroom Request',
-                            body: `Your Homeroom request for ${teacher.lastName} on ${moment(request.requestedTime).format('dddd, MMMM Do')} has been approved!`
+                            body: `Your Homeroom request for ${teacher.name} on ${moment(request.requestedTime).format('dddd, MMMM Do')} has been approved!`
                         }
                     }
                     admin.messaging().sendToDevice(request.pushID, payload)

@@ -1,18 +1,42 @@
 {
   "rules": {
-    "users": {
-      "$uid": {
-        ".read": "$uid === auth.uid",
-        ".write": "$uid === auth.uid"
+    "schools": {
+      "$school": {
+        "requests": {
+          "accepted": {
+            ".validate": "newData.isBoolean()"
+          },
+          "reason": {
+            ".validate": "newData.isString()"
+          },
+          "user": {
+            ".validate": "newData.val() == auth.uid"
+          },
+          "viewed": {
+            ".validate": "newData.isBoolean()"
+          },
+          "teacher": {
+            ".validate": "newData.isString()"
+          },
+          ".read": "data.child('user').val() == auth.uid || data.child('teacher').val() == auth.uid",
+          ".write": "root.child('users').child(auth.uid).child('school').val() == $school"
+        },
+        ".read": "root.child('users').child(auth.uid).child('school').val() == $school",
+        ".write": false
       }
     },
-    "teachers": {
-      ".read": true,
-      ".write": false
-    },
-    "requests": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+    "users": {
+      "$user": {
+        ".write": false,
+        ".read": "$user == auth.uid",
+        "name": {
+          ".write": true,
+          ".validate": "newData.isString()"
+        },
+        "defaultTeachers": {
+          ".write": true
+        }
+      }
     }
   }
 }
