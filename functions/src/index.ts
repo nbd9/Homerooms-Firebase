@@ -39,6 +39,7 @@ interface request {
 admin.initializeApp()
 
 const db = admin.database()
+const expo = new Expo()
 
 const gmailEmail = functions.config().gmail.email
 const gmailPassword = functions.config().gmail.password
@@ -438,7 +439,7 @@ exports.sendRequest = functions.database.ref('/schools/{school}/requests/{reques
                     }
                     mailTransport.sendMail(mailOptions)
                 } else {
-                    console.log('Test Account - no need to send an email.')
+                    console.log('Non-student account - no need to send an email.')
                 }
             })
         })
@@ -466,14 +467,14 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
         }
     })
 
-    // Send e-mail to current homeroom teacher
-    ref.once('value', function (requestSnapshot) {
+    return ref.once('value', function (requestSnapshot) {
         let request: request = requestSnapshot.val()
+        
         db.ref('users/' + request.user).once('value', function (userSnapshot) {
             let student: user = userSnapshot.val()
 
             // Getting correct teacher ref
-            let teacherKey = (request.day === 'A') ? student.seminars.a : student.seminars.b
+            let teacherKey = (request.day === 'A') ? student.defaultTeachers['A'] : student.defaultTeachers['B']
             db.ref(`teachers/${teacherKey}`).once('value', function (teacherSnapshot) {
                 let teacher: teacher = teacherSnapshot.val()
                 let mailOptions = {
@@ -485,32 +486,20 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
                 }
 
                 mailTransport.sendMail(mailOptions)
+
+                // Sending push notification
+                let notifcation = [{
+                    to: student.token,
+                    sound: 'default',
+                    title: 'Homeroom Request',
+                    body: `Your Homeroom request for ${teacher.name} on ${moment(request.requestedTime).format('dddd, MMMM Do')} has been accepted!`,
+                }]
+
+                expo.sendPushNotificationsAsync(notifcation)
             })
-        })
-    })
 
-    // Return HTML file.
-    return ref.once('value', (requestSnapshot) => {
-        let request: request = requestSnapshot.val()
-
-        db.ref('users/' + request.user).once('value', function (studentSnapshot) {
-            let student: student = studentSnapshot.val()
-
-            db.ref('teachers/' + request.teacher).once('value', function (teacherSnapshot) {
-                let teacher: teacher = teacherSnapshot.val()
-
-                if ('pushID' in request) {
-                    let payload = {
-                        notification: {
-                            title: 'Homeroom Request',
-                            body: `Your Homeroom request for ${teacher.name} on ${moment(request.requestedTime).format('dddd, MMMM Do')} has been approved!`
-                        }
-                    }
-                    admin.messaging().sendToDevice(request.pushID, payload)
-                }
-
-                return res.send(generateAcceptedScreen(student, request.requestedTime))
-            })
+            // Displaying the accept HTML screen
+            return res.send(generateAcceptedScreen(student, request.requestedTime))
         })
     })
 })
@@ -520,15 +509,15 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
  */
 exports.denyRequest = functions.https.onRequest((req, res) => {
     const params = req.url.split('/')
-    const requestID = params[2]
-    const ref = db.ref('requests/' + requestID)
+    const schoolID = params[2]
+    const requestID = params[3]
+    const ref = db.ref(`schools/${schoolID}/requests/${requestID}`)
 
     // Set accepted value
     ref.update({
-        denied: true
+        accepted: true
     }, function (error) {
         if (error) {
-            console.log('Error setting accepted value.' + error)
             return res.send(generateErrorScreen(error))
         } else {
             console.log('User denied.')
@@ -536,28 +525,30 @@ exports.denyRequest = functions.https.onRequest((req, res) => {
         }
     })
 
-    // Return HTML file.
-    return ref.once('value', (requestSnapshot) => {
+    return ref.once('value', function (requestSnapshot) {
         let request: request = requestSnapshot.val()
 
-        db.ref('users/' + requestSnapshot.val().user).once('value', function (studentSnapshot) {
-            let student: student = studentSnapshot.val()
+        db.ref('users/' + request.user).once('value', function (userSnapshot) {
+            let student: user = userSnapshot.val()
 
-            db.ref('teachers/' + requestSnapshot.val().teacher).once('value', function (teacherSnapshot) {
+            // Getting correct teacher ref
+            let teacherKey = (request.day === 'A') ? student.defaultTeachers['A'] : student.defaultTeachers['B']
+            db.ref(`teachers/${teacherKey}`).once('value', function (teacherSnapshot) {
                 let teacher: teacher = teacherSnapshot.val()
+                
+                // Sending push notification
+                let notifcation = [{
+                    to: student.token,
+                    sound: 'default',
+                    title: 'Homeroom Request',
+                    body: `Your Homeroom request for ${teacher.name} on ${moment(request.requestedTime).format('dddd, MMMM Do')} has been denied.`,
+                }]
 
-                if ('pushID' in request) {
-                    let payload = {
-                        notification: {
-                            title: 'Homeroom Request',
-                            body: `Your Homeroom request for ${teacher.lastName} on ${moment(request.requestedTime).format('dddd, MMMM Do')} has been denied.`
-                        }
-                    }
-                    admin.messaging().sendToDevice(request.pushID, payload)
-                }
-
-                return res.send(generateDeniedScreen(student, request.requestedTime))
+                expo.sendPushNotificationsAsync(notifcation)
             })
+
+            // Displaying the accept HTML screen
+            return res.send(generateDeniedScreen(student, request.requestedTime))
         })
     })
 })
