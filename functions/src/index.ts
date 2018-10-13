@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as nodemailer from 'nodemailer'
 import * as moment from 'moment'
-import * as Expo from 'expo-server-sdk'
+import Expo, { ExpoPushMessage } from 'expo-server-sdk'
 
 interface teacher {
     email: string
@@ -25,15 +25,12 @@ interface user {
 }
 
 interface request {
-    user: string // we only care about id
-    newteacher: string // we only care about id
-    oldTeacher: string // we only care about id
-    accepted: boolean
-    viewed: boolean
-    timestamp: string
-    requestedTime: string
-    day?: string 
-    reason?: string
+    teacher: string,
+    accepted: boolean,
+    viewed: boolean,
+    timestamp: string,
+    requestedTime: string,
+    reason: string
 }
 
 admin.initializeApp()
@@ -416,14 +413,14 @@ const generateErrorScreen = (error) => {
 /**
  * Sends an email to the requested teacher, asking to accept the student into Support Seminar
  */
-exports.sendRequest = functions.database.ref('/schools/{school}/requests/{requestID}')
+exports.sendRequest = functions.database.ref('/schools/{school}/requests/{user}/{requestID}')
     .onCreate((snapshot, context) => {
         let request: request = snapshot.val()
         let teacherRef = db.ref(`schools/${context.params.school}/teachers/${request.teacher}`)
-        let studentRef = db.ref(`users/${request.user}`)
+        let studentRef = db.ref(`users/${context.params.user}`)
 
-        let acceptLink = `https://homerooms-nbdeg.firebaseapp.com/acceptRequest/${context.params.school}/${context.params.requestID}`
-        let declineLink = `https://homerooms-nbdeg.firebaseapp.com/declineRequest/${context.params.school}/${context.params.requestID}` 
+        let acceptLink = `https://homerooms-nbdeg.firebaseapp.com/acceptRequest/${context.params.school}/${context.params.user}/${context.params.requestID}`
+        let declineLink = `https://homerooms-nbdeg.firebaseapp.com/declineRequest/${context.params.school}/${context.params.user}/${context.params.requestID}` 
 
         teacherRef.once('value', function (teacherSnapshot) {
             let teacher: teacher = teacherSnapshot.val()
@@ -452,8 +449,9 @@ exports.sendRequest = functions.database.ref('/schools/{school}/requests/{reques
 exports.acceptRequest = functions.https.onRequest((req, res) => {
     const params = req.url.split('/')
     const schoolID = params[2]
-    const requestID = params[3]
-    const ref = db.ref(`schools/${schoolID}/requests/${requestID}`)
+    const userID = params[3]
+    const requestID = params[4]
+    const ref = db.ref(`schools/${schoolID}/requests/${userID}/${requestID}`)
 
     // Set accepted value
     ref.update({
@@ -470,12 +468,10 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
     return ref.once('value', function (requestSnapshot) {
         let request: request = requestSnapshot.val()
         
-        db.ref('users/' + request.user).once('value', function (userSnapshot) {
+        db.ref('users/' + userID).once('value', function (userSnapshot) {
             let student: user = userSnapshot.val()
 
-            // Getting correct teacher ref
-            let teacherKey = (request.day === 'A') ? student.defaultTeachers['A'] : student.defaultTeachers['B']
-            db.ref(`teachers/${teacherKey}`).once('value', function (teacherSnapshot) {
+            db.ref(`schools/${schoolID}/teachers/${request.teacher}`).once('value', function (teacherSnapshot) {
                 let teacher: teacher = teacherSnapshot.val()
                 let mailOptions = {
                     from: '"Homerooms" <' + functions.config().gmail.email + '>',
@@ -488,14 +484,13 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
                 mailTransport.sendMail(mailOptions)
 
                 // Sending push notification
-                let notifcation = [{
+                let notifcation: ExpoPushMessage = {
                     to: student.token,
-                    sound: 'default',
                     title: 'Homeroom Request',
                     body: `Your Homeroom request for ${teacher.name} on ${moment(request.requestedTime).format('dddd, MMMM Do')} has been accepted!`,
-                }]
+                }
 
-                expo.sendPushNotificationsAsync(notifcation)
+                expo.sendPushNotificationsAsync([notifcation])
             })
 
             // Displaying the accept HTML screen
@@ -510,8 +505,9 @@ exports.acceptRequest = functions.https.onRequest((req, res) => {
 exports.denyRequest = functions.https.onRequest((req, res) => {
     const params = req.url.split('/')
     const schoolID = params[2]
-    const requestID = params[3]
-    const ref = db.ref(`schools/${schoolID}/requests/${requestID}`)
+    const userID = params[3]
+    const requestID = params[4]
+    const ref = db.ref(`schools/${schoolID}/requests/${userID}/${requestID}`)
 
     // Set accepted value
     ref.update({
@@ -528,23 +524,20 @@ exports.denyRequest = functions.https.onRequest((req, res) => {
     return ref.once('value', function (requestSnapshot) {
         let request: request = requestSnapshot.val()
 
-        db.ref('users/' + request.user).once('value', function (userSnapshot) {
+        db.ref('users/' + userID).once('value', function (userSnapshot) {
             let student: user = userSnapshot.val()
 
-            // Getting correct teacher ref
-            let teacherKey = (request.day === 'A') ? student.defaultTeachers['A'] : student.defaultTeachers['B']
-            db.ref(`teachers/${teacherKey}`).once('value', function (teacherSnapshot) {
+            db.ref(`schools/${schoolID}/teachers/${request.teacher}`).once('value', function (teacherSnapshot) {
                 let teacher: teacher = teacherSnapshot.val()
                 
                 // Sending push notification
-                let notifcation = [{
+                let notifcation: ExpoPushMessage = {
                     to: student.token,
-                    sound: 'default',
                     title: 'Homeroom Request',
                     body: `Your Homeroom request for ${teacher.name} on ${moment(request.requestedTime).format('dddd, MMMM Do')} has been denied.`,
-                }]
+                }
 
-                expo.sendPushNotificationsAsync(notifcation)
+                expo.sendPushNotificationsAsync([notifcation])
             })
 
             // Displaying the accept HTML screen

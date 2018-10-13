@@ -3,23 +3,26 @@
     "schools": {
       "$school": {
         "requests": {
-          "accepted": {
-            ".validate": "newData.isBoolean()"
-          },
-          "reason": {
-            ".validate": "newData.isString()"
-          },
-          "user": {
-            ".validate": "newData.val() == auth.uid"
-          },
-          "viewed": {
-            ".validate": "newData.isBoolean()"
-          },
-          "teacher": {
-            ".validate": "newData.isString()"
-          },
-          ".read": "data.child('user').val() == auth.uid || data.child('teacher').val() == auth.uid",
-          ".write": "root.child('users').child(auth.uid).child('school').val() == $school"
+          "$user": {
+            "accepted": {
+              ".validate": "newData.isBoolean()"
+            },
+            "reason": {
+              ".validate": "newData.isString()"
+            },
+            "user": {
+              ".validate": "newData.val() == auth.uid"
+            },
+            "viewed": {
+              ".validate": "newData.isBoolean()"
+            },
+            "teacher": {
+              ".validate": "newData.isString()"
+            },
+            ".read": "$user == auth.uid || data.child('teacher').val() == auth.uid",
+            ".write": "$user == auth.uid"
+            
+          }
         },
         ".read": "root.child('users').child(auth.uid).child('school').val() == $school",
         ".write": false
